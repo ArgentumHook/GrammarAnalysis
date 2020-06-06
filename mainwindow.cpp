@@ -11,6 +11,7 @@
 #include <iostream>
 #include <cstdio>
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <cctype>
 #include <vector>
@@ -630,11 +631,10 @@ void make_LR_table()
     //建立LR(0)表骨架
     QStandardItemModel *LRItem=new QStandardItemModel(LRTable);
     //建立表头内容
-    LRItem->setColumnCount(V.size()+1);
-    LRItem->setHeaderData(0,Qt::Horizontal,"");
+    LRItem->setColumnCount(V.size());
     for (int i = 0; i < V.size(); i++)
     {
-        LRItem->setHeaderData(i+1,Qt::Horizontal,QChar(V[i]));
+        LRItem->setHeaderData(i,Qt::Horizontal,QChar(V[i]));
     }
     stringstream sin;
     for (int i = 0; i < collection.size(); i++)
@@ -650,8 +650,12 @@ void make_LR_table()
             {
                 if (Goto[i][ch] != -1)
                 {
-                    QStandardItem *predictItem = new QStandardItem(Goto[i][ch]);
-                    LRItem->setItem(i,j+1,predictItem);
+                    string res;
+                    stringstream ss;
+                    ss << Goto[i][ch];
+                    ss >> res;
+                    QStandardItem *predictItem = new QStandardItem(res.c_str());
+                    LRItem->setItem(i,j,predictItem);
                 }
             }
             else
@@ -669,8 +673,8 @@ void make_LR_table()
                     if (temp.num != -1)
                         sin << temp.num;
                     sin >> temp.out;
-                    QStandardItem *predictItem = new QStandardItem(QString::fromStdString(temp.out));
-                    LRItem->setItem(i,j+1,predictItem);
+                    QStandardItem *predictItem = new QStandardItem(temp.out.c_str());
+                    LRItem->setItem(i,j,predictItem);
                 }
             }
         }
@@ -719,34 +723,46 @@ void make_SLR_table()
                     }
             }
         }
-    puts("------------------------------------------SLR(1)分析表--------------------------------------------------------");
-    printf("%10s%5c%5s", "|", V[0], "|");
-    for (int i = 1; i < V.size(); i++)
-        printf("%5c%5s", V[i], "|");
-    puts("");
-    for (int i = 0; i < (V.size() + 1) * 10; i++)
-        printf("-");
-    puts("");
+    //新建SLR(1)表对话框并设置属性
+    QDialog *SLRTableOutput=new QDialog();
+    SLRTableOutput->setWindowTitle("SLR(1)分析表");
+    SLRTableOutput->resize(800,600);
+    //建立SLR(1)表
+    QTableView *SLRTable=new QTableView(SLRTableOutput);
+    //建立SLR(1)表骨架
+    QStandardItemModel *SLRItem=new QStandardItemModel(SLRTable);
+    //建立表头内容
+    SLRItem->setColumnCount(V.size());
+    for (int i = 0; i < V.size(); i++)
+    {
+        SLRItem->setHeaderData(i,Qt::Horizontal,QChar(V[i]));
+    }
     stringstream sin;
     for (int i = 0; i < collection.size(); i++)
     {
-        printf("%5d%5s", i, "|");
+        QStandardItem *standItem = new QStandardItem(i);
+        SLRItem->setItem(i,0,standItem);
         for (int j = 0; j < V.size(); j++)
         {
+            //QStandardItem *predictItem = new QStandardItem();
+            //LRItem->setItem(i,j+1,predictItem);
             char ch = V[j];
             if (isupper(ch))
             {
-                if (Goto[i][ch] == -1)
-                    printf("%10s", "|");
-                else
-                    printf("%5d%5s", Goto[i][ch], "|");
+                if (Goto[i][ch] != -1)
+                {
+                    string res;
+                    stringstream ss;
+                    ss << Goto[i][ch];
+                    ss >> res;
+                    QStandardItem *predictItem = new QStandardItem(res.c_str());
+                    SLRItem->setItem(i,j,predictItem);
+                }
             }
             else
             {
                 sin.clear();
-                if (action[i][ch].type == -1)
-                    printf("%10s", "|");
-                else
+                if (action[i][ch].type != -1)
                 {
                     Content &temp = action[i][ch];
                     if (temp.type == 0)
@@ -758,15 +774,16 @@ void make_SLR_table()
                     if (temp.num != -1)
                         sin << temp.num;
                     sin >> temp.out;
-                    printf("%7s%3s", temp.out.c_str(), "|");
+                    QStandardItem *predictItem = new QStandardItem(temp.out.c_str());
+                    SLRItem->setItem(i,j,predictItem);
                 }
             }
         }
-        puts("");
     }
-    for (int i = 0; i < (V.size() + 1) * 10; i++)
-        printf("-");
-    puts("");
+    SLRTable->setModel(SLRItem);
+    SLRTable->resize(800,600);
+    SLRTable->show();
+    SLRTableOutput->show();
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -959,6 +976,8 @@ void MainWindow::on_getLRTable_clicked()
         Vn_set[x].insert(s + j + 2);
     }
     make_item();
+    make_first();
+    make_follow();
     make_set();
     make_V();
     make_go();
@@ -990,6 +1009,8 @@ void MainWindow::on_getSLRTable_clicked()
         Vn_set[x].insert(s + j + 2);
     }
     make_item();
+    make_first();
+    make_follow();
     make_set();
     make_V();
     make_go();
