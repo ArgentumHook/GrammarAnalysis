@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "grammar.h"
 #include <QDebug>
 #include <QDialog>
 #include <QTableWidget>
@@ -8,117 +9,11 @@
 #include <QStandardItemModel>
 #include <QWidget>
 #include <QStandardItem>
-#include <iostream>
-#include <cstdio>
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
-#include <cctype>
-#include <vector>
-#include <string>
-#include <queue>
-#include <map>
-#include <set>
-#include <sstream>
 #define MAX 507
 using namespace std;
 
-class WF
-{
-public:
-    string left, right;
-    set<string> Right;
-    int back;
-    int id;
-    WF(char s[])
-    {
-        left = s;
-    }
-    WF(char s1[], char s2[], int x, int y)
-    {
-        left = s1;
-        right = s2;
-        back = x;
-        id = y;
-    }
-    WF(const string &s1, const string &s2, int x, int y)
-    {
-        left = s1;
-        right = s2;
-        back = x;
-        id = y;
-    }
-    bool operator<(const WF &a) const
-    {
-        if (left == a.left)
-            return right < a.right;
-        return left < a.left;
-    }
-    bool operator==(const WF &a) const
-    {
-        return (left == a.left) && (right == a.right);
-    }
-    void print()
-    {
-        printf("%s->%s\n", left.c_str(), right.c_str());
-    }
-    void insert(char s[])
-    {
-        Right.insert(s);
-    }
-};
-
-class Closure
-{
-public:
-    vector<WF> element;
-    void print(string str)
-    {
-        printf("%-15s%-15s\n", "", str.c_str());
-        for (int i = 0; i < element.size(); i++)
-            element[i].print();
-    }
-    bool operator==(const Closure &a) const
-    {
-        if (a.element.size() != element.size())
-            return false;
-        for (int i = 0; i < a.element.size(); i++)
-            if (element[i] == a.element[i])
-                continue;
-            else
-                return false;
-        return true;
-    }
-};
-
-struct Content
-{
-    int type;
-    int num;
-    string out;
-    Content() { type = -1; }
-    Content(int a, int b)
-        : type(a), num(b) {}
-};
-
-vector<WF> wf;
-map<string, vector<int>> dic;
-map<string, vector<int>> VN_set;
-map<string, bool> vis;
-string start = "S";
-vector<Closure> collection;
-vector<WF> items;
-char CH = '$';
-int go[MAX][MAX];
-int to[MAX];
-vector<char> V;
-bool used[MAX];
-Content action[MAX][MAX];
-int Goto[MAX][MAX];
-map<string, set<char>> first;
-map<string, set<char>> follow;
-map<string, int> VN_dic;
-vector<WF> Vn_set;
+QString rawInput;//获取输入文本
+QStringList exprSet;//输入的产生式集合
 
 void make_item()
 {
@@ -180,6 +75,37 @@ void make_first()
             continue;
         else
             dfs(it2->first);
+    //新建first集对话框并设置属性
+    QDialog *firstSetOutput=new QDialog();
+    firstSetOutput->setWindowTitle("first集");
+    firstSetOutput->resize(400,300);
+    //输出first集
+    QLabel *label=new QLabel(firstSetOutput);
+    QString output="";
+    map<string, set<char>>::iterator it = first.begin();
+    for (; it != first.end(); it++)
+    {
+        output+="FIRST(";
+        output+=it->first.c_str();
+        output+=")={";
+        set<char> &temp = it->second;
+        set<char>::iterator it1 = temp.begin();
+        bool flag = false;
+        for (; it1 != temp.end(); it1++)
+        {
+            if (flag)
+                output+=",";
+            output+=*it1;
+            flag = true;
+        }
+        output+="}\n";
+    }
+    //设置输出文字样式
+    QFont ft;
+    ft.setPointSize(16);
+    label->setFont(ft);
+    label->setText(output);
+    firstSetOutput->show();
 }
 
 void append(const string &str1, const string &str2)
@@ -264,6 +190,38 @@ void make_follow()
         if (!goon)
             break;
     }
+    //新建follow集对话框并设置属性
+    QDialog *followSetOutput=new QDialog();
+    followSetOutput->setWindowTitle("follow集");
+    followSetOutput->resize(400,300);
+    //输出follow集
+    QLabel *label=new QLabel(followSetOutput);
+    QString output="";
+    map<string, set<char>>::iterator it = follow.begin();
+    for (; it != follow.end(); it++)
+    {
+        output+="FOLLOW(";
+        output+=it->first.c_str();
+        output+=")={";
+        set<char> &temp = it->second;
+        temp.insert('#');
+        set<char>::iterator it1 = temp.begin();
+        bool flag = false;
+        for (; it1 != temp.end(); it1++)
+        {
+            if (flag)
+                output+=",";
+            output+=*it1;
+            flag = true;
+        }
+        output+="}\n";
+    }
+    //设置输出文字样式
+    QFont ft;
+    ft.setPointSize(16);
+    label->setFont(ft);
+    label->setText(output);
+    followSetOutput->show();
 }
 
 void make_set()
@@ -798,7 +756,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_getFirstSet_clicked()
+void init()
 {
     //分隔产生式左部与右部
     int n=exprSet.length();
@@ -821,199 +779,43 @@ void MainWindow::on_getFirstSet_clicked()
         int x = VN_dic[s] - 1;
         Vn_set[x].insert(s + j + 2);
     }
-    make_item();
-    make_first();
-    //新建first集对话框并设置属性
-    QDialog *firstSetOutput=new QDialog(this);
-    firstSetOutput->setWindowTitle("first集");
-    firstSetOutput->resize(400,300);
-    //输出first集
-    QLabel *label=new QLabel(firstSetOutput);
-    QString output="";
-    map<string, set<char>>::iterator it = first.begin();
-    for (; it != first.end(); it++)
-    {
-        output+="FIRST(";
-        output+=it->first.c_str();
-        output+=")={";
-        set<char> &temp = it->second;
-        set<char>::iterator it1 = temp.begin();
-        bool flag = false;
-        for (; it1 != temp.end(); it1++)
-        {
-            if (flag)
-                output+=",";
-            output+=*it1;
-            flag = true;
-        }
-        output+="}\n";
-    }
-    //设置输出文字样式
-    QFont ft;
-    ft.setPointSize(16);
-    label->setFont(ft);
-    label->setText(output);
-    firstSetOutput->show();
 }
 
-void MainWindow::on_getFollowSet_clicked()
-{
-    //分隔产生式左部与右部
-    int n=exprSet.length();
-    char *s;
-    for (int i = 0; i < n; i++)
-    {
-        QByteArray ba = exprSet[i].toLatin1();
-        s=ba.data();
-        int len = strlen(s), j;
-        for (j = 0; j < len; j++)
-            if (s[j] == '-')
-                break;
-        s[j] = 0;
-        wf.push_back(WF(s, s + j + 2, -1, -1));
-        if (!VN_dic[s])
-        {
-            Vn_set.push_back(s);
-            VN_dic[s] = Vn_set.size();
-        }
-        int x = VN_dic[s] - 1;
-        Vn_set[x].insert(s + j + 2);
-    }
-    make_item();
-    make_follow();
-    //新建follow集对话框并设置属性
-    QDialog *followSetOutput=new QDialog(this);
-    followSetOutput->setWindowTitle("follow集");
-    followSetOutput->resize(400,300);
-    //输出follow集
-    QLabel *label=new QLabel(followSetOutput);
-    QString output="";
-    map<string, set<char>>::iterator it = follow.begin();
-    for (; it != follow.end(); it++)
-    {
-        output+="FOLLOW(";
-        output+=it->first.c_str();
-        output+=")={";
-        set<char> &temp = it->second;
-        temp.insert('#');
-        set<char>::iterator it1 = temp.begin();
-        bool flag = false;
-        for (; it1 != temp.end(); it1++)
-        {
-            if (flag)
-                output+=",";
-            output+=*it1;
-            flag = true;
-        }
-        output+="}\n";
-    }
-    //设置输出文字样式
-    QFont ft;
-    ft.setPointSize(16);
-    label->setFont(ft);
-    label->setText(output);
-    followSetOutput->show();
-}
 
 void MainWindow::on_enterInput_clicked()
 {
     rawInput=ui->inputText->toPlainText();
     exprSet=rawInput.split('\n');
-    qDebug()<<exprSet<<endl;
-}
-
-void MainWindow::on_getLLTable_clicked()
-{
-    //分隔产生式左部与右部
-    int n=exprSet.length();
-    char *s;
-    for (int i = 0; i < n; i++)
-    {
-        QByteArray ba = exprSet[i].toLatin1();
-        s=ba.data();
-        int len = strlen(s), j;
-        for (j = 0; j < len; j++)
-            if (s[j] == '-')
-                break;
-        s[j] = 0;
-        wf.push_back(WF(s, s + j + 2, -1, -1));
-        if (!VN_dic[s])
-        {
-            Vn_set.push_back(s);
-            VN_dic[s] = Vn_set.size();
-        }
-        int x = VN_dic[s] - 1;
-        Vn_set[x].insert(s + j + 2);
-    }
+    init();
     make_item();
     make_set();
     make_V();
     make_go();
+}
+
+void MainWindow::on_getFirstSet_clicked()
+{
+    make_first();
+}
+
+void MainWindow::on_getFollowSet_clicked()
+{
+    make_follow();
+}
+
+void MainWindow::on_getLLTable_clicked()
+{
     make_LL_table();
 }
 
 void MainWindow::on_getLRTable_clicked()
 {
-    //分隔产生式左部与右部
-    int n=exprSet.length();
-    char *s;
-    for (int i = 0; i < n; i++)
-    {
-        QByteArray ba = exprSet[i].toLatin1();
-        s=ba.data();
-        int len = strlen(s), j;
-        for (j = 0; j < len; j++)
-            if (s[j] == '-')
-                break;
-        s[j] = 0;
-        wf.push_back(WF(s, s + j + 2, -1, -1));
-        if (!VN_dic[s])
-        {
-            Vn_set.push_back(s);
-            VN_dic[s] = Vn_set.size();
-        }
-        int x = VN_dic[s] - 1;
-        Vn_set[x].insert(s + j + 2);
-    }
-    make_item();
-    make_first();
-    make_follow();
-    make_set();
-    make_V();
-    make_go();
     make_LR_table();
     //新建LR(0)表对话框
 }
 
 void MainWindow::on_getSLRTable_clicked()
 {
-    //分隔产生式左部与右部
-    int n=exprSet.length();
-    char *s;
-    for (int i = 0; i < n; i++)
-    {
-        QByteArray ba = exprSet[i].toLatin1();
-        s=ba.data();
-        int len = strlen(s), j;
-        for (j = 0; j < len; j++)
-            if (s[j] == '-')
-                break;
-        s[j] = 0;
-        wf.push_back(WF(s, s + j + 2, -1, -1));
-        if (!VN_dic[s])
-        {
-            Vn_set.push_back(s);
-            VN_dic[s] = Vn_set.size();
-        }
-        int x = VN_dic[s] - 1;
-        Vn_set[x].insert(s + j + 2);
-    }
-    make_item();
-    make_first();
-    make_follow();
-    make_set();
-    make_V();
-    make_go();
     make_SLR_table();
     //新建SLR(1)表对话框
 }

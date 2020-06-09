@@ -30,8 +30,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QString rawInput;//获取输入文本
-    QStringList exprSet;//输入的产生式集合
 };
 
 #endif // MAINWINDOW_H
