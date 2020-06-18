@@ -75,37 +75,6 @@ void make_first()
             continue;
         else
             dfs(it2->first);
-    //新建first集对话框并设置属性
-    QDialog *firstSetOutput=new QDialog();
-    firstSetOutput->setWindowTitle("first集");
-    firstSetOutput->resize(400,300);
-    //输出first集
-    QLabel *label=new QLabel(firstSetOutput);
-    QString output="";
-    map<string, set<char>>::iterator it = first.begin();
-    for (; it != first.end(); it++)
-    {
-        output+="FIRST(";
-        output+=it->first.c_str();
-        output+=")={";
-        set<char> &temp = it->second;
-        set<char>::iterator it1 = temp.begin();
-        bool flag = false;
-        for (; it1 != temp.end(); it1++)
-        {
-            if (flag)
-                output+=",";
-            output+=*it1;
-            flag = true;
-        }
-        output+="}\n";
-    }
-    //设置输出文字样式
-    QFont ft;
-    ft.setPointSize(16);
-    label->setFont(ft);
-    label->setText(output);
-    firstSetOutput->show();
 }
 
 void append(const string &str1, const string &str2)
@@ -190,38 +159,7 @@ void make_follow()
         if (!goon)
             break;
     }
-    //新建follow集对话框并设置属性
-    QDialog *followSetOutput=new QDialog();
-    followSetOutput->setWindowTitle("follow集");
-    followSetOutput->resize(400,300);
-    //输出follow集
-    QLabel *label=new QLabel(followSetOutput);
-    QString output="";
-    map<string, set<char>>::iterator it = follow.begin();
-    for (; it != follow.end(); it++)
-    {
-        output+="FOLLOW(";
-        output+=it->first.c_str();
-        output+=")={";
-        set<char> &temp = it->second;
-        temp.insert('#');
-        set<char>::iterator it1 = temp.begin();
-        bool flag = false;
-        for (; it1 != temp.end(); it1++)
-        {
-            if (flag)
-                output+=",";
-            output+=*it1;
-            flag = true;
-        }
-        output+="}\n";
-    }
-    //设置输出文字样式
-    QFont ft;
-    ft.setPointSize(16);
-    label->setFont(ft);
-    label->setText(output);
-    followSetOutput->show();
+
 }
 
 void make_set()
@@ -748,11 +686,21 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    isClickedFirst=false;
+    isClickedFollow=false;
+    isClickedLL=false;
+    isClickedLR=false;
+    isClickedSLR=false;
     ui->setupUi(this);
 }
 
 MainWindow::~MainWindow()
 {
+    isClickedFirst=false;
+    isClickedFollow=false;
+    isClickedLL=false;
+    isClickedLR=false;
+    isClickedSLR=false;
     delete ui;
 }
 
@@ -786,6 +734,11 @@ void MainWindow::on_enterInput_clicked()
 {
     rawInput=ui->inputText->toPlainText();
     exprSet=rawInput.split('\n');
+    isClickedFirst=false;
+    isClickedFollow=false;
+    isClickedLL=false;
+    isClickedLR=false;
+    isClickedSLR=false;
     init();
     make_item();
     make_set();
@@ -795,27 +748,141 @@ void MainWindow::on_enterInput_clicked()
 
 void MainWindow::on_getFirstSet_clicked()
 {
+    isClickedFirst=true;
     make_first();
+    //新建first集对话框并设置属性
+    QDialog *firstSetOutput=new QDialog();
+    firstSetOutput->setWindowTitle("first集");
+    firstSetOutput->resize(400,300);
+    //输出first集
+    QLabel *label=new QLabel(firstSetOutput);
+    QString output="";
+    map<string, set<char>>::iterator it = first.begin();
+    for (; it != first.end(); it++)
+    {
+        output+="FIRST(";
+        output+=it->first.c_str();
+        output+=")={";
+        set<char> &temp = it->second;
+        set<char>::iterator it1 = temp.begin();
+        bool flag = false;
+        for (; it1 != temp.end(); it1++)
+        {
+            if (flag)
+                output+=",";
+            output+=*it1;
+            flag = true;
+        }
+        output+="}\n";
+    }
+    //设置输出文字样式
+    QFont ft;
+    ft.setPointSize(16);
+    label->setFont(ft);
+    label->setText(output);
+    firstSetOutput->show();
 }
 
 void MainWindow::on_getFollowSet_clicked()
 {
+    isClickedFollow=true;
     make_follow();
+    //新建follow集对话框并设置属性
+    QDialog *followSetOutput=new QDialog();
+    followSetOutput->setWindowTitle("follow集");
+    followSetOutput->resize(400,300);
+    //输出follow集
+    QLabel *label=new QLabel(followSetOutput);
+    QString output="";
+    map<string, set<char>>::iterator it = follow.begin();
+    for (; it != follow.end(); it++)
+    {
+        output+="FOLLOW(";
+        output+=it->first.c_str();
+        output+=")={";
+        set<char> &temp = it->second;
+        temp.insert('#');
+        set<char>::iterator it1 = temp.begin();
+        bool flag = false;
+        for (; it1 != temp.end(); it1++)
+        {
+            if (flag)
+                output+=",";
+            output+=*it1;
+            flag = true;
+        }
+        output+="}\n";
+    }
+    //设置输出文字样式
+    QFont ft;
+    ft.setPointSize(16);
+    label->setFont(ft);
+    label->setText(output);
+    followSetOutput->show();
 }
 
 void MainWindow::on_getLLTable_clicked()
 {
-    make_LL_table();
+    if(isClickedFirst&&isClickedFollow)
+        make_LL_table();
+    else if(isClickedFirst&&!isClickedFollow)
+    {
+        make_follow();
+        make_LL_table();
+    }
+    else if(!isClickedFirst&&isClickedFollow)
+    {
+        make_first();
+        make_LL_table();
+    }
+    else
+    {
+        make_first();
+        make_follow();
+        make_LL_table();
+    }
 }
 
 void MainWindow::on_getLRTable_clicked()
 {
-    make_LR_table();
-    //新建LR(0)表对话框
+    if(isClickedFirst&&isClickedFollow)
+        make_LR_table();
+    else if(isClickedFirst&&!isClickedFollow)
+    {
+        make_follow();
+        make_LR_table();
+    }
+    else if(!isClickedFirst&&isClickedFollow)
+    {
+        make_first();
+        make_LR_table();
+    }
+    else
+    {
+        make_first();
+        make_follow();
+        make_LR_table();
+    }
 }
 
 void MainWindow::on_getSLRTable_clicked()
 {
-    make_SLR_table();
-    //新建SLR(1)表对话框
+    if(isClickedFirst&&isClickedFollow)
+        make_SLR_table();
+    else if(isClickedFirst&&!isClickedFollow)
+    {
+        make_follow();
+        make_SLR_table();
+    }
+    else if(!isClickedFirst&&isClickedFollow)
+    {
+        make_first();
+        make_SLR_table();
+    }
+    else
+    {
+        make_first();
+        make_follow();
+        make_SLR_table();
+    }
 }

@@ -19,8 +19,8 @@ using namespace std;
 class WF
 {
 public:
-    string left, right;
-    set<string> Right;
+    string left, right;//候选式左部，右部
+    set<string> Right;//候选式右部
     int back;
     int id;
     WF(char s[])
@@ -112,5 +112,10 @@ map<string, set<char>> first;
 map<string, set<char>> follow;
 map<string, int> VN_dic;
 vector<WF> Vn_set;
+bool isClickedFirst;
+bool isClickedFollow;
+bool isClickedLL;
+bool isClickedLR;
+bool isClickedSLR;
 
 #endif // GRAMMAR_H
