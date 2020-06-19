@@ -416,6 +416,7 @@ bool check_follow(const string &text, char ch)
 void make_LL_table()
 {
     map<char, string> temp;
+    int flag=0;
     vector<char> letter;
     bool vis[500];
     memset(vis, 0, sizeof(vis));
@@ -447,9 +448,31 @@ void make_LL_table()
                 {
                     //cout << "YES" << endl;
                     temp[letter[j]] = *it;
+                    flag++;
                 }
                 if (it->at(0) == '~' && check_follow(left, letter[j]))
+                {
                     temp[letter[j]] = *it;
+                    flag++;
+                }
+                //cout<<flag<<endl;
+                if(flag>=2)
+                {
+                    //新建LL(1)表对话框并设置属性
+                    QDialog *LLTableOutput=new QDialog();
+                    LLTableOutput->setWindowTitle("LL(1)分析表");
+                    LLTableOutput->resize(800,600);
+                    QLabel *label=new QLabel(LLTableOutput);
+                    QString output="不是LL(1)文法";
+                    //设置输出文字样式
+                    QFont ft;
+                    ft.setPointSize(16);
+                    label->setFont(ft);
+                    label->setText(output);
+                    LLTableOutput->show();
+                    return;
+                }
+                flag=0;
             }
         predict_table.push_back(temp);
     }
@@ -518,6 +541,35 @@ void make_LR_table()
                     }
             }
         }
+    bool singal=true;
+    for (int i = 0; i < collection.size(); i++)
+    {
+        for (int j = 0; j < V.size(); j++)
+        {
+            char ch = V[j];
+            if ((Goto[i][ch] != -1)||(action[i][ch].type != -1))
+            {
+                singal=false;
+            }
+        }
+    }
+    if(singal)
+    {
+        //qDebug()<<"gg"<<endl;
+        //新建LR(0)表对话框并设置属性
+        QDialog *LRTableOutput=new QDialog();
+        LRTableOutput->setWindowTitle("LR(0)分析表");
+        LRTableOutput->resize(800,600);
+        QLabel *label=new QLabel(LRTableOutput);
+        QString output="不是LR(0)文法";
+        //设置输出文字样式
+        QFont ft;
+        ft.setPointSize(16);
+        label->setFont(ft);
+        label->setText(output);
+        LRTableOutput->show();
+        return;
+    }
     //新建LR(0)表对话框并设置属性
     QDialog *LRTableOutput=new QDialog();
     LRTableOutput->setWindowTitle("LR(0)分析表");
@@ -619,6 +671,35 @@ void make_SLR_table()
                     }
             }
         }
+    bool singal=true;
+    for (int i = 0; i < collection.size(); i++)
+    {
+        for (int j = 0; j < V.size(); j++)
+        {
+            char ch = V[j];
+            if ((Goto[i][ch] != -1)||(action[i][ch].type != -1))
+            {
+                singal=false;
+            }
+        }
+    }
+    if(singal)
+    {
+        //qDebug()<<"gg"<<endl;
+        //新建SLR(1)表对话框并设置属性
+        QDialog *SLRTableOutput=new QDialog();
+        SLRTableOutput->setWindowTitle("SLR(1)分析表");
+        SLRTableOutput->resize(800,600);
+        QLabel *label=new QLabel(SLRTableOutput);
+        QString output="不是SLR(1)文法";
+        //设置输出文字样式
+        QFont ft;
+        ft.setPointSize(16);
+        label->setFont(ft);
+        label->setText(output);
+        SLRTableOutput->show();
+        return;
+    }
     //新建SLR(1)表对话框并设置属性
     QDialog *SLRTableOutput=new QDialog();
     SLRTableOutput->setWindowTitle("SLR(1)分析表");
@@ -829,17 +910,21 @@ void MainWindow::on_getLLTable_clicked()
     {
         make_follow();
         make_LL_table();
+        isClickedFollow=true;
     }
     else if(!isClickedFirst&&isClickedFollow)
     {
         make_first();
         make_LL_table();
+        isClickedFirst=true;
     }
     else
     {
         make_first();
         make_follow();
         make_LL_table();
+        isClickedFollow=true;
+        isClickedFirst=true;
     }
 }
 
@@ -851,17 +936,21 @@ void MainWindow::on_getLRTable_clicked()
     {
         make_follow();
         make_LR_table();
+        isClickedFollow=true;
     }
     else if(!isClickedFirst&&isClickedFollow)
     {
         make_first();
         make_LR_table();
+        isClickedFirst=true;
     }
     else
     {
         make_first();
         make_follow();
         make_LR_table();
+        isClickedFollow=true;
+        isClickedFirst=true;
     }
 }
 
@@ -873,16 +962,20 @@ void MainWindow::on_getSLRTable_clicked()
     {
         make_follow();
         make_SLR_table();
+        isClickedFollow=true;
     }
     else if(!isClickedFirst&&isClickedFollow)
     {
         make_first();
         make_SLR_table();
+        isClickedFirst=true;
     }
     else
     {
         make_first();
         make_follow();
         make_SLR_table();
+        isClickedFollow=true;
+        isClickedFirst=true;
     }
 }
